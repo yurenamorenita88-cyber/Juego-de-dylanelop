@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#102b27">
+<title>Juego de DylanelOP — Capítulo 1</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#102b27;color:#fff;font-family:system-ui,Arial,sans-serif;touch-action:none}
+#wrap{height:100%;display:flex;flex-direction:column;max-width:900px;margin:auto;background:linear-gradient(#163c35,#10251f)}
+header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+header strong{font-size:clamp(14px,3.5vw,19px)}#hud{font-size:13px;color:#d9f4df}
+#game{flex:1;position:relative;min-height:0}
+canvas{width:100%;height:100%;display:block}
+#story{position:absolute;inset:0;background:rgba(3,17,15,.78);display:flex;align-items:center;justify-content:center;padding:20px}
+.panel{width:min(560px,100%);background:linear-gradient(145deg,#214b3c,#122d29);border:2px solid #8ad6a0;border-radius:20px;padding:22px;box-shadow:0 12px 40px #0008}
+.panel h1{font-size:clamp(22px,5vw,32px);margin:0 0 8px;color:#c6ffd1}
+.panel p{line-height:1.5;margin:10px 0 18px}
+button{border:0;border-radius:14px;padding:12px 18px;background:#a7edb4;color:#123324;font-weight:800;font-size:16px}
+#controls{display:flex;justify-content:space-between;align-items:center;padding:10px 14px 16px;gap:12px}
+.pad{display:flex;gap:8px}.ctrl{width:58px;height:52px;background:#e0f8df;color:#153d2b;font-size:23px;border-radius:15px;box-shadow:0 4px 0 #78b68a}
+#action{min-width:110px;background:#f8d77a}
+#hint{font-size:12px;color:#d1e9d5;text-align:center;padding-bottom:5px}
+@media(min-width:700px){#controls{justify-content:center;gap:35px}.ctrl{width:68px;height:58px}}
+</style>
+</head>
+<body>
+<div id="wrap">
+<header><strong>🌟 Juego de DylanelOP</strong><span id="hud">🪙 0/5 · 💎 0/1</span></header>
+<div id="game"><canvas id="c"></canvas>
+<div id="story"><div class="panel"><h1>🌳 Capítulo 1: El Bosque Encantado</h1><p>Alex ha llegado a un bosque misterioso. Allí conoce a Lumi, un pequeño espíritu de luz. El Corazón de la Luz se ha roto en siete fragmentos y el mundo necesita ayuda.</p><p><b>Misión:</b> recoge 5 monedas mágicas, encuentra a Lumi y consigue el primer fragmento.</p><button id="start">¡Comenzar aventura!</button></div></div>
+</div>
+<div id="hint">Explora el bosque · Acércate a Lumi y al cristal</div>
+<div id="controls">
+ <div class="pad">
+  <button class="ctrl" data-dir="left">◀</button><button class="ctrl" data-dir="right">▶</button>
+ </div>
+ <div class="pad">
+  <button class="ctrl" data-dir="up">▲</button><button class="ctrl" data-dir="down">▼</button>
+ </div>
+ <button id="action">Hablar / Usar</button>
+</div>
+</div>
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d'),story=document.getElementById('story'),hud=document.getElementById('hud'),hint=document.getElementById('hint');
+let W=800,H=520,started=false,coins=0,hasGem=false,dialog='',dialogUntil=0;
+const player={x:105,y:365,r:16,speed:3.1};
+const lumi={x:390,y:205};
+const gem={x:700,y:115};
+const coinSpots=[{x:210,y:145},{x:300,y:390},{x:490,y:335},{x:590,y:230},{x:145,y:260}];
+const got=new Set(),keys={};
+function resize(){const r=canvas.getBoundingClientRect();const d=Math.min(devicePixelRatio||1,2);canvas.width=r.width*d;canvas.height=r.height*d;W=r.width;H=r.height;ctx.setTransform(d,0,0,d,0,0)}
+window.addEventListener('resize',resize);resize();
+function say(t){dialog=t;dialogUntil=Date.now()+3600;hint.textContent=t}
+function drawTree(x,y,s){ctx.fillStyle='#5a3826';ctx.fillRect(x-5*s,y,10*s,34*s);ctx.fillStyle='#1b6746';ctx.beginPath();ctx.arc(x,y,24*s,0,Math.PI*2);ctx.fill();ctx.fillStyle='#2b8754';ctx.beginPath();ctx.arc(x-12*s,y-10*s,15*s,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(x+12*s,y-8*s,16*s,0,Math.PI*2);ctx.fill()}
+function draw(){const sx=W/800,sy=H/520;ctx.save();ctx.scale(sx,sy);
+let g=ctx.createLinearGradient(0,0,0,520);g.addColorStop(0,'#7dc99b');g.addColorStop(1,'#285c3e');ctx.fillStyle=g;ctx.fillRect(0,0,800,520);
+ctx.fillStyle='#6b9d58';ctx.beginPath();ctx.ellipse(400,300,330,205,0,0,Math.PI*2);ctx.fill();
+ctx.fillStyle='#b4a66a';ctx.beginPath();ctx.moveTo(0,400);ctx.quadraticCurveTo(180,310,350,380);ctx.quadraticCurveTo(540,450,800,290);ctx.lineTo(800,520);ctx.lineTo(0,520);ctx.fill();
+for(let i=0;i<18;i++){let x=(i*97+23)%800,y=(i*71+25)%260;drawTree(x,y,.65+(i%3)*.12)}
+for(let i=0;i<coinSpots.length;i++){if(!got.has(i)){let p=coinSpots[i];ctx.fillStyle='#ffdf57';ctx.beginPath();ctx.arc(p.x,p.y,9,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff2a6';ctx.lineWidth=3;ctx.stroke()}}
+ctx.fillStyle='#8df5ff';ctx.shadowColor='#63efff';ctx.shadowBlur=18;ctx.beginPath();ctx.moveTo(gem.x,gem.y-23);ctx.lineTo(gem.x+17,gem.y);ctx.lineTo(gem.x,gem.y+23);ctx.lineTo(gem.x-17,gem.y);ctx.closePath();ctx.fill();ctx.shadowBlur=0;
+ctx.fillStyle='#e9fbff';ctx.beginPath();ctx.arc(lumi.x,lumi.y,15,0,Math.PI*2);ctx.fill();ctx.fillStyle='#a7f8ff';ctx.beginPath();ctx.arc(lumi.x,lumi.y,10,0,Math.PI*2);ctx.fill();ctx.fillStyle='#153e43';ctx.fillRect(lumi.x-5,lumi.y-3,3,3);ctx.fillRect(lumi.x+3,lumi.y-3,3,3);
+ctx.fillStyle='#2b3b9b';ctx.fillRect(player.x-11,player.y-2,22,23);ctx.fillStyle='#f2c49a';ctx.beginPath();ctx.arc(player.x,player.y-12,11,0,Math.PI*2);ctx.fill();ctx.fillStyle='#51301f';ctx.beginPath();ctx.arc(player.x,player.y-17,11,Math.PI,Math.PI*2);ctx.fill();
+ctx.restore();
+if(dialogUntil>Date.now()){ctx.fillStyle='#102b27dd';ctx.fillRect(12,H-62,W-24,50);ctx.fillStyle='white';ctx.font='bold 14px system-ui';ctx.fillText(dialog.slice(0,90),24,H-32)}
+hud.textContent=`🪙 ${coins}/5 · 💎 ${hasGem?1:0}`;
+requestAnimationFrame(draw)}
+function move(dx,dy){if(!started)return;player.x=Math.max(25,Math.min(775,player.x+dx));player.y=Math.max(45,Math.min(490,player.y+dy));coinSpots.forEach((p,i)=>{if(!got.has(i)&&Math.hypot(player.x-p.x,player.y-p.y)<27){got.add(i);coins++;say('¡Moneda mágica conseguida!')}})}
+function action(){if(!started)return;if(Math.hypot(player.x-lumi.x,player.y-lumi.y)<65){say(coins<5?'Lumi: ¡Busca las cinco monedas mágicas para revelar el santuario!':'Lumi: ¡Has reunido la energía! El fragmento te espera al este.');return}
+if(Math.hypot(player.x-gem.x,player.y-gem.y)<65){if(coins<5){say('El cristal está protegido. Primero reúne las cinco monedas mágicas.')}else if(!hasGem){hasGem=true;say('¡Has conseguido el primer fragmento del Corazón de la Luz! ¡Capítulo completado!');setTimeout(()=>{story.style.display='flex';story.innerHTML='<div class="panel"><h1>💎 ¡Capítulo 1 completado!</h1><p>El bosque recupera su luz. Lumi señala un horizonte de dunas doradas: el siguiente destino de Alex.</p><p><b>Has recuperado 1 de los 7 fragmentos.</b></p><button onclick="location.reload()">Volver a jugar</button></div>'},900)}return}
+say('Explora el bosque, recoge las monedas y encuentra a Lumi.')}
+document.getElementById('start').onclick=()=>{story.style.display='none';started=true;say('Alex: ¡Qué lugar tan increíble!')};
+document.getElementById('action').onclick=action;
+document.querySelectorAll('[data-dir]').forEach(b=>{let d=b.dataset.dir,dx=d==='left'?-1:d==='right'?1:0,dy=d==='up'?-1:d==='down'?1:0;let timer;const begin=e=>{e.preventDefault();move(dx*player.speed*2,dy*player.speed*2);timer=setInterval(()=>move(dx*player.speed*2,dy*player.speed*2),70)};const end=()=>clearInterval(timer);b.addEventListener('pointerdown',begin);['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,end))});
+window.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='a')move(-10,0);if(e.key==='ArrowRight'||e.key==='d')move(10,0);if(e.key==='ArrowUp'||e.key==='w')move(0,-10);if(e.key==='ArrowDown'||e.key==='s')move(0,10);if(e.key===' '||e.key==='Enter')action()});
+draw();
+</script>
+</body>
+</html>
